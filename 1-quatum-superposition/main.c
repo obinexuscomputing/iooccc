@@ -10,7 +10,7 @@
 #define STATE_10 0b10
 #define STATE_11 0b11
 
-#define MIN_PROB 0.1
+#define MIN_PROB 0.05
 #define MAX_BAR_LEN 40
 #define PI 3.14159265358979323846
 
@@ -52,7 +52,7 @@ void visualize_superposition(QuantumState states[], int num_states) {
         printf(" ");
         
         int bar_length = (int)((states[i].probability / max_prob) * MAX_BAR_LEN);
-        bar_length = fmax(bar_length, 1);
+        bar_length = fmax(bar_length, 2);  // Minimum bar length of 2
         
         // Draw graduated bar
         for (int j = 0; j < bar_length; j++) {
@@ -64,38 +64,58 @@ void visualize_superposition(QuantumState states[], int num_states) {
     printf("\n");
 }
 
+void apply_quantum_interference(QuantumState states[], int num_states, int step) {
+    // Apply interference between adjacent states
+    for (int i = 0; i < num_states; i++) {
+        int next = (i + 1) % num_states;
+        double phase_diff = fabs(states[i].phase - states[next].phase) * PI / 180.0;
+        
+        // Interference effect based on phase difference
+        double interference = cos(phase_diff) * 0.1;
+        states[i].probability += interference;
+        states[next].probability -= interference;
+    }
+}
+
 void evolve_phase(QuantumState *state, int step) {
-    // Non-linear phase evolution with interference effects
-    double base_shift = 45.0;  // 45 degree base shift
-    double interference = 15.0 * sin(step * PI / 4);  // Oscillating component
-    double random_component = (rand() % 30) - 15;  // Random ±15 degrees
+    // Smooth phase evolution with quantum walk characteristics
+    double base_shift = 60.0;  // Larger base shift
+    double quantum_walk = 20.0 * sin(step * PI / 3);  // Quantum walk component
+    double uncertainty = (rand() % 20) - 10;  // Quantum uncertainty
     
-    double phase_shift = base_shift + interference + random_component;
+    double phase_shift = base_shift + quantum_walk + uncertainty;
     state->phase += phase_shift;
     
     // Normalize phase to [0, 360)
     while (state->phase >= 360.0) state->phase -= 360.0;
     while (state->phase < 0.0) state->phase += 360.0;
     
-    // Update complex amplitude
+    // Update complex amplitude with smooth phase transition
     state->amplitude = sqrt(state->probability) * cexp(I * state->phase * PI / 180.0);
 }
 
 void calculate_probabilities(QuantumState states[], int num_states, int step) {
     double total = 0.0;
     
-    // Generate probabilities using interference pattern
+    // Generate probabilities with quantum walk behavior
     for (int i = 0; i < num_states; i++) {
-        double base = 0.25;  // Equal superposition base
-        double interference = 0.15 * sin((step + i) * PI / 2);  // Interference term
-        double random = 0.1 * ((double)(rand() % 100) / 100.0 - 0.5);  // Random component
+        double t = (step + i) * PI / 4;
+        double quantum_walk = 0.25 + 0.15 * sin(t) * cos(t/2);
+        double uncertainty = 0.1 * ((double)(rand() % 100) / 100.0 - 0.5);
         
-        states[i].probability = base + interference + random;
+        states[i].probability = quantum_walk + uncertainty;
         states[i].probability = fmax(states[i].probability, MIN_PROB);
+    }
+    
+    // Apply quantum interference effects
+    apply_quantum_interference(states, num_states, step);
+    
+    // Normalize probabilities
+    total = 0.0;
+    for (int i = 0; i < num_states; i++) {
         total += states[i].probability;
     }
     
-    // Normalize probabilities
     for (int i = 0; i < num_states; i++) {
         states[i].probability /= total;
         evolve_phase(&states[i], step);
