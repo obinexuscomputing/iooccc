@@ -4,33 +4,104 @@
 #include<stdio.h>
 #include<stdlib.h>
 #define P(...) printf(__VA_ARGS__)
-#define G(x,y,z) ((x)<(y)?(z[0]):(x)<(y*2)?(z[1]):(x)<(y*3)?(z[2]):(z[3]))
+#define D(x) for(int i=0;i<x;i++)
 #define R (rand()%100)
-#define F(n) for(int i=0;i<n;i++)
-#define W while
 #define PI M_PI
-#define _(x) return x
-#define D(x) ((x)*PI/180.0)
 typedef double d;
 typedef double complex c;
-struct q{int s;c a;d p,h;}_;
-char*b="░▒▓█";d m(d x,d y){_(x>y?x:y);}
-void w(d*p,int n,d f){W(*p>=f)*p-=f;W(*p<0)*p+=f;}
-void e(struct q*t,d*h,int n){
-    d z[4],v=0;F(4){d u=PI/4,k=PI/8;
-    z[i]=.25+.15*sin((n+i)*u)*cos((n+i)*k);
-    z[i]+=0.1*((d)R/100-.5);
-    t[i].p=m(z[i],.05);v+=t[i].p;}F(4){
-    int j=(i+1)%4;d f=cos(fabs(t[i].h-t[j].h)*D(1))*.1;
-    t[i].p+=f;t[j].p-=f;}d s=0;F(4)s+=t[i].p;
-    F(4){t[i].p/=s;d r=60+20*sin(n*PI/3)+(R%20)-10;
-    t[i].h+=r;w(&t[i].h,0,360);
-    t[i].a=sqrt(t[i].p)*cexp(_Complex_I*D(t[i].h));}}
-void v(struct q*t){P("\nState Distribution:\n");d x=0;
-F(4)x=m(x,t[i].p);F(4){P("  |%d%d> ",(t[i].s&2)>>1,t[i].s&1);
-int l=40*t[i].p/x;F(l)P("%s",G(i,l/4,b));
-P(" %.3f ∠%.0f°\n",t[i].p,t[i].h);}P("\n");}
-int main(){srand(time(0));struct q t[]={{0,.5,.25,0},
-{1,.5,.25,90},{2,.5,.25,180},{3,.5,.25,270}};
-P("Quantum Superposition\n==================\n");
-F(5){P("\nStep %d:\n",i+1);e(t,0,i+1);v(t);}_(0);}
+
+struct q{
+    int s;  // state
+    c a;    // amplitude
+    d p,h;  // probability, phase
+};
+
+const char *g(int n){
+    switch(n){
+        case 0: return "░";
+        case 1: return "▒";
+        case 2: return "▓";
+        case 3: return "█";
+    }
+    return "";
+}
+
+void s(d*x){
+    if(*x>=360)*x-=360;
+    if(*x<0)*x+=360;
+}
+
+void e(struct q*t,int n){
+    d total=0;
+    
+    // Generate base probabilities
+    D(4){
+        t[i].p=0.25+0.1*sin((n+i)*PI/4)*cos((n+i)*PI/8);
+        t[i].p=fmax(t[i].p,0.05);
+        total+=t[i].p;
+    }
+    
+    // Apply interference
+    D(4){
+        int next=(i+1)%4;
+        d phi=fabs(t[i].h-t[next].h)*PI/180;
+        d intf=cos(phi)*0.1;
+        t[i].p+=intf;
+        t[next].p-=intf;
+    }
+    
+    // Normalize and evolve
+    total=0;
+    D(4)total+=t[i].p;
+    
+    D(4){
+        t[i].p/=total;
+        t[i].h+=60+20*sin(n*PI/3)+(R%20)-10;
+        s(&t[i].h);
+        t[i].a=sqrt(t[i].p)*cexp(I*t[i].h*PI/180);
+    }
+}
+
+void v(struct q*t){
+    P("\nState Distribution:\n");
+    
+    // Find max probability
+    d max_p=0;
+    D(4)max_p=fmax(max_p,t[i].p);
+    
+    // Display states
+    D(4){
+        P("  |%d%d> ",(t[i].s>>1)&1,t[i].s&1);
+        int len=(int)(40*t[i].p/max_p);
+        len=fmax(len,1);
+        
+        for(int j=0;j<len;j++){
+            P("%s",g(j*4/len));
+        }
+        P(" %.3f ∠%.0f°\n",t[i].p,t[i].h);
+    }
+    P("\n");
+}
+
+int main(){
+    srand(time(0));
+    
+    // Initialize quantum states
+    struct q t[4];
+    for(int i=0;i<4;i++){
+        t[i].s=i;
+        t[i].a=0.5;
+        t[i].p=0.25;
+        t[i].h=i*90.0;
+    }
+    
+    P("Quantum Superposition\n==================\n");
+    
+    // Evolution steps
+    D(5){
+        P("\nStep %d:\n",i+1);
+        e(t,i+1);
+        v(t);
+    }
+    return 0;
+}
