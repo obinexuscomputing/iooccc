@@ -2,92 +2,86 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
+#include <complex.h>
 
-// Define quantum states
 #define STATE_00 0b00
 #define STATE_01 0b01
 #define STATE_10 0b10
 #define STATE_11 0b11
 
-// Buffer size for visualization
-#define VIS_WIDTH 50
-#define VIS_HEIGHT 10
+#define MIN_PROB 0.1
+#define PROB_SCALE 6
+#define MAX_BAR_LEN 40
 
 typedef struct {
     int state;
+    double complex amplitude;
     double probability;
+    double phase;
 } QuantumState;
 
-// Initialize quantum system
 void init_quantum_system() {
     srand(time(NULL));
 }
 
-// Print binary representation of state
 void print_binary_state(int state) {
     printf("|%d%d⟩", (state & 0b10) >> 1, state & 0b01);
 }
 
-// Create visual representation of superposition
 void visualize_superposition(QuantumState states[], int num_states) {
-    char canvas[VIS_HEIGHT][VIS_WIDTH];
-    memset(canvas, ' ', sizeof(canvas));
+    printf("\nState Distribution:\n");
     
-    // Draw probability distribution
     for (int i = 0; i < num_states; i++) {
-        int height = (int)(states[i].probability * (VIS_HEIGHT - 2));
-        int col = (VIS_WIDTH / (num_states + 1)) * (i + 1);
+        printf("  ");
+        print_binary_state(states[i].state);
+        printf(" ");
         
-        // Draw vertical bar
-        for (int j = 0; j < height; j++) {
-            canvas[VIS_HEIGHT - 2 - j][col] = '|';
+        int bar_length = (int)(states[i].probability * MAX_BAR_LEN);
+        bar_length = fmax(bar_length, 1);
+        for (int j = 0; j < bar_length; j++) {
+            printf("*");
         }
         
-        // Draw state label
-        canvas[VIS_HEIGHT - 1][col - 1] = '0' + ((states[i].state & 0b10) >> 1);
-        canvas[VIS_HEIGHT - 1][col] = '0' + (states[i].state & 0b01);
+        printf(" %.3f ∠%.0f°\n", states[i].probability, states[i].phase);
     }
-    
-    // Print visualization
-    printf("\nQuantum State Visualization:\n");
-    for (int i = 0; i < VIS_HEIGHT; i++) {
-        for (int j = 0; j < VIS_WIDTH; j++) {
-            putchar(canvas[i][j]);
-        }
-        putchar('\n');
-    }
-    for (int j = 0; j < VIS_WIDTH; j++) {
-        putchar('-');
-    }
-    putchar('\n');
+    printf("\n");
 }
 
-// Apply quantum operations
-int apply_quantum_operations(int state) {
-    // Complex state transition using multiple bitwise operations
-    int xor_result = state ^ ((rand() % 4));  // XOR with random state
-    int and_result = state & ((rand() % 4));  // AND with random state
-    int or_result = state | ((rand() % 4));   // OR with random state
-    
-    // Combine results to create new state
-    return (xor_result ^ and_result ^ or_result) & 0b11;
+void ensure_unique_states(QuantumState states[], int num_states) {
+    for (int i = 0; i < num_states; i++) {
+        int new_state = i;  // Assign states in order (00, 01, 10, 11)
+        states[i].state = new_state;
+    }
 }
 
-// Calculate probabilities for superposition states
+void evolve_phase(QuantumState *state) {
+    // Coherent phase evolution
+    double phase_shift = (30.0 + (rand() % 60)) * M_PI / 180.0;  // 30-90 degrees
+    state->phase += phase_shift;
+    if (state->phase >= 360.0) {
+        state->phase -= 360.0;
+    }
+    
+    // Update complex amplitude with new phase
+    state->amplitude = sqrt(state->probability) * cexp(I * state->phase * M_PI / 180.0);
+}
+
 void calculate_probabilities(QuantumState states[], int num_states) {
     double total = 0.0;
     
-    // Generate random probabilities and calculate total
+    // Generate balanced probabilities
     for (int i = 0; i < num_states; i++) {
-        states[i].probability = (double)(rand() % 100 + 1) / 100.0;
+        // Smoother probability distribution
+        double r = (double)(rand() % 100) / 100.0;
+        states[i].probability = 0.15 + r * 0.35;  // Range: 0.15 to 0.50
         total += states[i].probability;
     }
     
-    // Normalize probabilities to ensure they sum to 1.0
-    if (total > 0.0) {
-        for (int i = 0; i < num_states; i++) {
-            states[i].probability /= total;
-        }
+    // Normalize probabilities
+    for (int i = 0; i < num_states; i++) {
+        states[i].probability /= total;
+        evolve_phase(&states[i]);
     }
 }
 
@@ -95,31 +89,21 @@ int main() {
     init_quantum_system();
     
     QuantumState states[] = {
-        {STATE_00, 0.25},
-        {STATE_01, 0.25},
-        {STATE_10, 0.25},
-        {STATE_11, 0.25}
+        {STATE_00, 0.5 + 0.0 * I, 0.25, 0.0},
+        {STATE_01, 0.5 + 0.0 * I, 0.25, 0.0},
+        {STATE_10, 0.5 + 0.0 * I, 0.25, 0.0},
+        {STATE_11, 0.5 + 0.0 * I, 0.25, 0.0}
     };
     int num_states = sizeof(states) / sizeof(states[0]);
     
     printf("Quantum Superposition Simulation\n");
     printf("================================\n");
     
-    for (int step = 0; step < 5; step++) {
-        printf("\nStep %d:\n", step + 1);
+    for (int step = 1; step <= 5; step++) {
+        printf("\nStep %d:\n", step);
         
-        // Calculate new probabilities
+        ensure_unique_states(states, num_states);
         calculate_probabilities(states, num_states);
-        
-        // Apply quantum operations to each state
-        for (int i = 0; i < num_states; i++) {
-            printf("State ");
-            print_binary_state(states[i].state);
-            printf(" probability: %.3f\n", states[i].probability);
-            states[i].state = apply_quantum_operations(states[i].state);
-        }
-        
-        // Visualize the current superposition state
         visualize_superposition(states, num_states);
     }
     
