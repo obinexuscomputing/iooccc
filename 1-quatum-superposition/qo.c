@@ -3,96 +3,34 @@
 #include<time.h>
 #include<stdio.h>
 #include<stdlib.h>
-
 #define P(...) printf(__VA_ARGS__)
-#define C(x) cos(x)
-#define S(x) sin(x)
-#define M(a,b) fmax(a,b)
-#define $(n) n*M_PI/180.
-#define E(s,n) s##n
-#define N(x) case x:return
-#define F(a,b) for(int a=0;a<b;a++)
-#define O return
-#define B break;
+#define G(x,y,z) ((x)<(y)?(z[0]):(x)<(y*2)?(z[1]):(x)<(y*3)?(z[2]):(z[3]))
+#define R (rand()%100)
+#define F(n) for(int i=0;i<n;i++)
 #define W while
-#define __ ;
-
+#define PI M_PI
+#define _(x) return x
+#define $(x) ((x)*PI/180.)
 typedef double d;
 typedef double complex c;
-
-int q(d x){
-    x-=360;
-    W(x>=360)x-=360;
-    W(x<0)x+=360;
-    O x;
-}
-
-int k(int x){O((1<<4)|8)>>x&1;}
-
-char*h(int n){
-    switch(n){
-        N(0)"░";
-        N(1)"▒";
-        N(2)"▓";
-        N(3)"█";
-    }O"";
-}
-
-struct E(s,_){
-    int t;
-    c a;
-    d p,h;
-};
-
-void V(int x,c*r){
-    *r=csqrt(x)*cexp(_Complex_I*$(x));
-}
-
-d U(d x,d y){O M(x,y);}
-
-void E(_,c)(struct E(s,_)*t,int n){
-    F(i,4){
-        d r=.25+.15*S((n+i)*M_PI/4)*C((n+i)*M_PI/8)+.1*((rand()%100)/100.-0.5);
-        t[i].p=M(r,.05);
-    }
-    d s=0;
-    F(i,4){
-        int j=(i+1)%4;
-        d f=C(fabs(t[i].h-t[j].h)*M_PI/180)*.1;
-        t[i].p+=f;
-        t[j].p-=f;
-    }
-    F(i,4)s+=t[i].p;
-    F(i,4){
-        t[i].p/=s;
-        d b=60+20*S(n*M_PI/3)+(rand()%20)-10;
-        t[i].h=q(t[i].h+b);
-        V(t[i].p,&t[i].a);
-    }
-}
-
-void E(_,v)(struct E(s,_)*t){
-    P("\nState Distribution:\n");
-    d m=0;
-    F(i,4)m=U(m,t[i].p);
-    F(i,4){
-        P("  |%d%d> ",k(t[i].t>>1),k(t[i].t));
-        int l=40*t[i].p/m;
-        F(j,l)P("%s",h(j*4/l));
-        P(" %.3f ∠%.0f°\n",t[i].p,t[i].h);
-    }
-    P("\n");
-}
-
-int main(){
-    srand(time(0));
-    struct E(s,_)t[]={{0,.5,0.25,0},{1,.5,.25,90},
-                      {2,.5,.25,180},{3,.5,.25,270}};
-    P("Quantum Superposition\n==================\n");
-    F(i,5){
-        P("\nStep %d:\n",i+1);
-        E(_,c)(t,i+1);
-        E(_,v)(t);
-    }
-    O 0;
-}
+struct q{int s;c a;d p,h;}_;
+char*b="░▒▓█";d m(d x,d y){_(x>y?x:y);}
+void w(d*p,int n,d f){W(*p>=f)*p-=f;W(*p<0)*p+=f;}
+void e(struct q*t,d*h,int n){
+    d z[4],v=0;F(4){d u=PI/4,k=PI/8;
+    z[i]=.25+.15*sin((n+i)*u)*cos((n+i)*k);
+    z[i]+=0.1*((d)R/100-.5);
+    t[i].p=m(z[i],.05);v+=t[i].p;}F(4){
+    int j=(i+1)%4;d f=cos(fabs(t[i].h-t[j].h)*$/180)*.1;
+    t[i].p+=f;t[j].p-=f;}d s=0;F(4)s+=t[i].p;
+    F(4){t[i].p/=s;d r=60+20*sin(n*PI/3)+(R%20)-10;
+    t[i].h+=r;w(&t[i].h,0,360);
+    t[i].a=sqrt(t[i].p)*cexp(_Complex_I*$(t[i].h));}}
+void v(struct q*t){P("\nState Distribution:\n");d x=0;
+F(4)x=m(x,t[i].p);F(4){P("  |%d%d> ",(t[i].s&2)>>1,t[i].s&1);
+int l=40*t[i].p/x;F(l)P("%s",G(i,l/4,b));
+P(" %.3f ∠%.0f°\n",t[i].p,t[i].h);}P("\n");}
+int main(){srand(time(0));struct q t[]={{0,.5,.25,0},
+{1,.5,.25,90},{2,.5,.25,180},{3,.5,.25,270}};
+P("Quantum Superposition\n==================\n");
+F(5){P("\nStep %d:\n",i+1);e(t,0,i+1);v(t);}_(0);}
